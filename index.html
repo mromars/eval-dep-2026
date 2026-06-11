@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Référentiel des compétences — IEPP Cocody II Plateaux</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  :root { --navy:#1E3A5F; --paper:#F4F2EB; --line:#DDD8CB; --orange:#F77F00; --green:#009A44;
+          --ok:#1B7A43; --warn:#C97D10; --bad:#B3372B; --grey:#6B7280; }
+  body { font-family: "Segoe UI", Arial, "Helvetica Neue", sans-serif; background: var(--paper); color:#1C2434; }
+  .mono { font-family: "Consolas", "Courier New", monospace; }
+  .tri { height:5px; display:flex; } .tri div { flex:1; }
+  .t1{background:var(--orange);} .t2{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);} .t3{background:var(--green);}
+  .wrap { max-width:760px; margin:0 auto; padding:0 16px 64px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; }
+  .btn { font-weight:700; border:none; border-radius:8px; cursor:pointer; padding:12px 22px; font-size:15px; font-family:inherit; }
+  .btn-p { background:var(--navy); color:#fff; } .btn-p:disabled { background:#B9C2CF; cursor:not-allowed; }
+  input.field { width:100%; padding:11px 12px; border:1.5px solid #C9C2B2; border-radius:7px; font-size:15px; font-family:inherit; background:#FCFBF7; }
+  input.field:focus { outline:2px solid var(--navy); border-color:var(--navy); }
+  .opt { display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left; background:#FCFBF7; border:1.5px solid #C9C2B2;
+         border-radius:9px; padding:13px 14px; cursor:pointer; font-size:14.5px; font-family:inherit; line-height:1.45; }
+  .opt:hover { border-color:var(--navy); }
+  .opt.sel { background:var(--navy); border-color:var(--navy); color:#fff; }
+  .optL { font-family:"Consolas", monospace; font-weight:700; flex-shrink:0; }
+  .sticky { position:sticky; top:0; z-index:10; background:var(--navy); }
+  .bar { height:4px; background:rgba(255,255,255,.18); } .bar>div { height:100%; background:var(--orange); transition:width .3s; }
+  .badge { font-size:10.5px; letter-spacing:1px; color:#fff; border-radius:5px; padding:3px 9px; font-weight:700; text-transform:uppercase; }
+  .pbar { height:9px; background:#EEEAE0; border-radius:5px; } .pbar>div { height:100%; border-radius:5px; }
+  h1.display { font-weight:900; color:var(--navy); }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ================== CONFIGURATION ADMINISTRATEUR ==================
+   Collez ci-dessous l'URL de votre application web Google Apps Script
+   (voir fichier collecte_google_sheets.gs et instructions fournies). */
+const ENDPOINT = "https://script.google.com/macros/s/AKfycby-Z0J2nNMPCujI9mHBALudodRkOIjxuhNAqr4fkWO7fpA64NDi1xVzErv6qEbxHAwK/exec";
+const LIMIT_S = 15 * 60;            // décompte : 15 minutes
+const LS_KEY = "quiz_iepp_cocody2_dep_v1";   // verrou de participation unique (par appareil)
+/* ================================================================== */
+
+const BANK = {
+ "domaines": [
+  "Valeurs, éthique et déontologie",
+  "Pilotage pédagogique de l'école",
+  "Gestion managériale de l'école",
+  "Animation de la vie scolaire et développement de partenariats"
+ ],
+ "questions": [
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Selon le préambule du référentiel, le Directeur d'école primaire (DEP) est nommé pour :",
+   "opts": [
+    "Trois ans renouvelables",
+    "Une année scolaire renouvelable par reconduction",
+    "Cinq ans",
+    "Une durée indéterminée"
+   ],
+   "a": 1,
+   "exp": "Préambule : les DEP sont nommés pour une année scolaire renouvelable par reconduction."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Le texte qui fixe les conditions de nomination du DEP et les charges qui lui sont dévolues est :",
+   "opts": [
+    "La loi n° 95-696 du 07/09/1995",
+    "Le décret portant organigramme du MENET-FP",
+    "L'arrêté n° 0095/MEN/DELC du 25/10/2010",
+    "La loi n° 2015-635 du 17/09/2015"
+   ],
+   "a": 2,
+   "exp": "Préambule : l'arrêté n° 0095/MEN/DELC du 25/10/2010 fixe les conditions de nomination et les charges du DEP."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Le DEP exerce sa fonction sous l'autorité directe :",
+   "opts": [
+    "Du Directeur Régional (DRENA)",
+    "De l'Inspecteur de l'Enseignement Préscolaire et Primaire, Chef de Circonscription",
+    "Du président du COGES",
+    "Du maire de la commune"
+   ],
+   "a": 1,
+   "exp": "Préambule (art. 27) : le DEP exerce sous l'autorité de l'IEPP, Chef de Circonscription."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Quelle composante relève de la compétence C1 « Faire partager les valeurs de la République » ?",
+   "opts": [
+    "Gérer le recrutement des contractuels",
+    "Élaborer des plaidoyers",
+    "Vulgariser les principes de la vie démocratique, la culture de la tolérance et de la paix",
+    "Suivre la gestion des ressources financières"
+   ],
+   "a": 2,
+   "exp": "C1, composante 3 : vulgariser les principes de la vie démocratique, la culture de la tolérance et de la paix."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Un indicateur de la composante « Éviter d'extérioriser ses opinions politiques et religieuses » est :",
+   "opts": [
+    "Le registre d'inventaire du matériel",
+    "La tenue vestimentaire sans signe apparent",
+    "Le plan d'actions du projet d'école",
+    "Le cahier de suivi du COGES"
+   ],
+   "a": 1,
+   "exp": "C1, composante 4 : tenue vestimentaire sans signe apparent, neutralité de la décoration, courtoisie."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "La composante « Maîtriser les préséances et les usages protocolaires » appartient à la compétence :",
+   "opts": [
+    "C1",
+    "C2",
+    "C5",
+    "C10"
+   ],
+   "a": 1,
+   "exp": "C2 : exercer le métier dans un cadre règlementaire en respectant l'éthique professionnelle (composante 6)."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Parmi ces éléments, lequel est un indicateur du « sens de la hiérarchie » (C2) ?",
+   "opts": [
+    "L'acheminement des écrits professionnels",
+    "L'initiation de prix d'excellence",
+    "La charte de l'école",
+    "Le cahier de semaine"
+   ],
+   "a": 0,
+   "exp": "C2, composante 3 : acheminement des écrits professionnels, qualité des écrits administratifs, état des relations avec la hiérarchie."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "La loi portant scolarisation obligatoire est :",
+   "opts": [
+    "La loi n° 95-696 du 07/09/1995",
+    "La loi n° 2015-635 du 17 septembre 2015",
+    "L'arrêté n° 0095/MEN/DELC",
+    "Le décret MENET-FP"
+   ],
+   "a": 1,
+   "exp": "Préambule : la loi n° 95-696 de 1995 est modifiée par la loi n° 2015-635 du 17/09/2015 portant scolarisation obligatoire."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Le droit à l'éducation garanti à chaque citoyen (article 1er de la loi) vise notamment à :",
+   "opts": [
+    "Acquérir le savoir, développer sa personnalité et exercer sa citoyenneté",
+    "Obtenir un emploi public garanti",
+    "Réduire les dépenses des familles",
+    "Limiter la mobilité sociale"
+   ],
+   "a": 0,
+   "exp": "Préambule : acquérir le savoir, développer sa personnalité, élever son niveau de formation, s'insérer dans la vie sociale et exercer sa citoyenneté."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Parmi les charges du DEP fixées par l'arrêté n° 0095/MEN/DELC, on trouve :",
+   "opts": [
+    "L'entretien des rapports avec les partenaires de son école",
+    "La fixation des salaires des enseignants",
+    "La nomination des inspecteurs",
+    "L'élaboration des programmes nationaux"
+   ],
+   "a": 0,
+   "exp": "Préambule : tâches administratives, coordination pédagogique, suivi des activités coopératives et socio-culturelles, et entretien des rapports avec les partenaires."
+  },
+  {
+   "d": 0,
+   "type": "QCM",
+   "q": "Quel indicateur relève de la composante « Se conformer aux instructions officielles » (C2) ?",
+   "opts": [
+    "L'affichage des moments d'évaluation au bureau du DEP",
+    "La charte de l'école",
+    "Le plan d'actions des clubs scolaires",
+    "Le répertoire des partenaires"
+   ],
+   "a": 0,
+   "exp": "C2, composante 5 : affichage des moments d'évaluation, état des évaluations de toutes les classes, rapports de conseils de maître."
+  },
+  {
+   "d": 0,
+   "type": "VF",
+   "q": "La neutralité de la décoration est un indicateur qui apparaît à la fois pour la vulgarisation de la vie démocratique et pour la non-extériorisation des opinions.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : cet indicateur figure dans les composantes 3 et 4 de C1."
+  },
+  {
+   "d": 0,
+   "type": "VF",
+   "q": "La liste des composantes de chaque compétence est priorisée et exhaustive.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : le préambule précise que la liste n'est ni priorisée, ni exhaustive."
+  },
+  {
+   "d": 0,
+   "type": "VF",
+   "q": "Le tableau du référentiel est construit linéairement mais doit se lire de manière systémique, les domaines, compétences et composantes étant étroitement articulés.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : c'est une prescription explicite du préambule."
+  },
+  {
+   "d": 0,
+   "type": "VF",
+   "q": "L'obligation de réserve ne s'applique pas au DEP en dehors de l'enceinte scolaire.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : les indicateurs « personnes et lieux fréquentés » et « non-implication dans des conflits et scandales dans la communauté » couvrent la vie hors école."
+  },
+  {
+   "d": 0,
+   "type": "VF",
+   "q": "Le DEP peut afficher ses convictions religieuses dans la décoration de son bureau dès lors qu'il reste courtois.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : la neutralité de la décoration est un indicateur explicite (C1, composantes 3 et 4)."
+  },
+  {
+   "d": 0,
+   "type": "CAS",
+   "q": "Cas pratique — Lors d'une cérémonie officielle à l'école, un DEP porte un insigne affichant son appartenance politique. Quelle composante du référentiel enfreint-il ?",
+   "opts": [
+    "S'approprier les valeurs de la République",
+    "Éviter d'extérioriser ses opinions politiques et religieuses dans l'exercice de ses fonctions",
+    "Maîtriser les préséances et les usages protocolaires",
+    "Se conformer aux instructions officielles"
+   ],
+   "a": 1,
+   "exp": "C1, composante 4 ; indicateur : tenue vestimentaire sans signe apparent."
+  },
+  {
+   "d": 0,
+   "type": "CAS",
+   "q": "Cas pratique — Un conflit oppose l'école à la communauté villageoise. Au regard du domaine 1, le DEP s'appuie d'abord sur :",
+   "opts": [
+    "La fermeture temporaire de l'école",
+    "Le comité de prévention et de gestion des conflits, avec un langage apaisant",
+    "La saisine directe du ministre",
+    "Le transfert des élèves vers une autre école"
+   ],
+   "a": 1,
+   "exp": "C1, composante 3 : comité de prévention et de gestion des conflits ; langage apaisant et rassurant ; absence de conflits école-communauté."
+  },
+  {
+   "d": 0,
+   "type": "CAS",
+   "q": "Cas pratique — Une autorité administrative arrive à l'improviste à l'école. Le premier réflexe attendu au titre des usages protocolaires est :",
+   "opts": [
+    "Soigner la qualité de l'accueil et de l'installation du visiteur",
+    "Convoquer immédiatement un conseil de maîtres",
+    "Faire signer le règlement intérieur au visiteur",
+    "Exiger un ordre de mission écrit avant tout échange"
+   ],
+   "a": 0,
+   "exp": "C2, composante 6 ; indicateurs : qualité de l'accueil et de l'installation des visiteurs, courtoisie dans les propos."
+  },
+  {
+   "d": 0,
+   "type": "CAS",
+   "q": "Cas pratique — Des enseignants mêlent opinions personnelles et savoirs lors des cours. Conformément à C1, le DEP doit :",
+   "opts": [
+    "Aider enseignants et élèves à distinguer les savoirs des opinions et croyances, dans le respect de la pensée des autres",
+    "Interdire tout débat en classe",
+    "Sanctionner sans dialogue",
+    "Saisir la presse locale"
+   ],
+   "a": 0,
+   "exp": "C1, composante 5 : aider à distinguer les savoirs des opinions ou croyances et à argumenter dans le respect de la pensée des autres."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "Le domaine « Pilotage pédagogique de l'école » regroupe les compétences :",
+   "opts": [
+    "C1 et C2",
+    "C3, C4 et C5",
+    "C6 à C10",
+    "C11 à C13"
+   ],
+   "a": 1,
+   "exp": "D2 = C3 (accompagnement), C4 (développement professionnel), C5 (leadership pédagogique)."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "« Contrôler les préparations de cours, les registres et les affichages obligatoires » est une composante de la compétence :",
+   "opts": [
+    "C3",
+    "C5",
+    "C7",
+    "C9"
+   ],
+   "a": 0,
+   "exp": "C3 : exercer un accompagnement actif et continu de l'acte professionnel de chacun et de l'équipe."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "Quel indicateur atteste de la promotion de l'éducation inclusive (C3) ?",
+   "opts": [
+    "L'état des effectifs incluant les élèves en situation de handicap",
+    "Le registre des circulaires",
+    "L'avis de recrutement",
+    "La charte de l'école"
+   ],
+   "a": 0,
+   "exp": "C3, composante « Promouvoir l'éducation inclusive » : états des effectifs (handicap, besoins spécifiques) et dispositifs dédiés."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "La composante « Encourager l'ouverture aux TIC » de l'équipe pédagogique relève de la compétence :",
+   "opts": [
+    "C3",
+    "C4",
+    "C5",
+    "C9"
+   ],
+   "a": 1,
+   "exp": "C4 (développement professionnel de l'équipe). À distinguer de C9 qui vise l'usage des TIC dans la gestion de l'école."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "Parmi ces éléments, lequel est un indicateur de la composante « S'assurer des conditions nécessaires à la progression des élèves » ?",
+   "opts": [
+    "La mise en place d'activités de soutien scolaire gratuit",
+    "Le PV de l'entretien de recrutement",
+    "Les panneaux de signalisation routière",
+    "Le cahier de suivi du COGES"
+   ],
+   "a": 0,
+   "exp": "C3, composante 7 : soutien scolaire gratuit, prix d'excellence, plateforme de coéducation avec les parents."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "« Assurer un leadership pédagogique » correspond à la compétence :",
+   "opts": [
+    "C2",
+    "C4",
+    "C5",
+    "C6"
+   ],
+   "a": 2,
+   "exp": "C5 : influence sur les changements de pratiques jusque dans la classe et sur l'engagement des collaborateurs."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "Quel indicateur illustre la valorisation de la progression des compétences (C4) ?",
+   "opts": [
+    "Les PV des journées de mérite ou d'excellence",
+    "L'avis de recrutement",
+    "Le registre d'inventaire du matériel",
+    "Le plan de communication du projet d'école"
+   ],
+   "a": 0,
+   "exp": "C4, composante 4 : PV des journées de mérite ou d'excellence, bulletins de visite de classe, cahiers d'auto-évaluation."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "Selon C3, l'évaluation des apprentissages doit être conduite :",
+   "opts": [
+    "Selon le libre choix de chaque maître",
+    "Conformément au format en vigueur",
+    "Uniquement en fin d'année scolaire",
+    "Sous la responsabilité du COGES"
+   ],
+   "a": 1,
+   "exp": "C3, composante 9 : veiller à l'évaluation des apprentissages conformément au format en vigueur (calendrier de composition, affichage des moments d'évaluation)."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "Quels documents figurent parmi les « documents de suivi et d'encadrement pédagogique » cités par le référentiel ?",
+   "opts": [
+    "Programmes éducatifs, textes de rentrée, cahiers-journaux, fiches de préparation",
+    "Le registre du COGES",
+    "Les avis de recrutement",
+    "La charte de l'école"
+   ],
+   "a": 0,
+   "exp": "Listés à plusieurs reprises (C2, C3, C5) : programmes éducatifs, textes de rentrée, cahiers-journaux, fiches de préparation."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "L'indicateur « Existence d'un calendrier de composition » se rattache à la composante :",
+   "opts": [
+    "Veiller à l'évaluation des apprentissages conformément au format en vigueur (C3)",
+    "Gérer le recrutement des contractuels (C9)",
+    "Élaborer des plaidoyers (C12)",
+    "Diffuser le règlement intérieur (C8)"
+   ],
+   "a": 0,
+   "exp": "C3, composante 9 : calendrier de composition, cahiers de devoirs et de composition, affichage des moments d'évaluation."
+  },
+  {
+   "d": 1,
+   "type": "QCM",
+   "q": "La composante « Faire connaître les outils relatifs aux différents bassins pédagogiques » relève de la compétence :",
+   "opts": [
+    "C5",
+    "C2",
+    "C7",
+    "C11"
+   ],
+   "a": 0,
+   "exp": "C5 (leadership pédagogique), composante 4 ; indicateurs : bulletins ou rapports d'inspection administrative, rapports de réunions."
+  },
+  {
+   "d": 1,
+   "type": "VF",
+   "q": "Le développement professionnel est un processus qui s'amorce lors de la formation initiale et se poursuit lors de la formation continue.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : c'est le sens donné à la compétence C4."
+  },
+  {
+   "d": 1,
+   "type": "VF",
+   "q": "Le leadership pédagogique du DEP exerce une influence sur les changements de pratiques jusque dans la classe.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : sens de C5 — influence sur les pratiques jusque dans la classe et sur l'engagement pour le projet d'école."
+  },
+  {
+   "d": 1,
+   "type": "VF",
+   "q": "Les dispositifs de différenciation prévus par le référentiel concernent exclusivement les meilleurs élèves.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : ils sont conçus pour les élèves à besoins spécifiques et en situation de handicap (C3 et C5)."
+  },
+  {
+   "d": 1,
+   "type": "VF",
+   "q": "La diffusion des instructions et des programmes officiels relève du COGES et non du DEP.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : c'est une composante de C3, à la charge du DEP."
+  },
+  {
+   "d": 1,
+   "type": "VF",
+   "q": "L'initiation de prix d'excellence est un indicateur qui soutient à la fois la progression des élèves et le développement professionnel de l'équipe.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : l'indicateur apparaît en C3 (progression des élèves) et en C4 (actions de développement professionnel)."
+  },
+  {
+   "d": 1,
+   "type": "CAS",
+   "q": "Cas pratique — Un enseignant nouvellement affecté présente des préparations de cours lacunaires. Conformément à C3, le DEP doit en priorité :",
+   "opts": [
+    "Demander sa mutation immédiate",
+    "Exercer un accompagnement actif : contrôle des préparations et suivi de ses pratiques professionnelles",
+    "Réduire son service d'enseignement",
+    "Saisir directement la DRENA"
+   ],
+   "a": 1,
+   "exp": "C3 : accompagnement actif et continu — contrôle des préparations, suivi des pratiques, dans une ambiance de bonne collégialité."
+  },
+  {
+   "d": 1,
+   "type": "CAS",
+   "q": "Cas pratique — Les résultats des évaluations chutent dans plusieurs classes. La réponse attendue au titre de C5 est :",
+   "opts": [
+    "Suspendre les compositions",
+    "Adopter une gestion d'initiatives et de solutions novatrices à la lumière des résultats des élèves",
+    "Attendre la prochaine inspection",
+    "Ne pas commenter les résultats"
+   ],
+   "a": 1,
+   "exp": "C5, composante 7 : gestion d'initiatives et de recherche de solutions novatrices à la lumière des résultats (états des résultats commentés, matrice d'actions)."
+  },
+  {
+   "d": 1,
+   "type": "CAS",
+   "q": "Cas pratique — L'équipe pédagogique n'a bénéficié d'aucune formation depuis deux ans. La première étape selon C4 consiste à :",
+   "opts": [
+    "Identifier les besoins de formation de l'équipe",
+    "Sanctionner les enseignants",
+    "Acheter du matériel informatique",
+    "Organiser une cérémonie de fin d'année"
+   ],
+   "a": 0,
+   "exp": "C4, composante 2 : identifier les besoins de formation (état des besoins), avant d'élaborer puis mettre en œuvre le plan de formation."
+  },
+  {
+   "d": 1,
+   "type": "CAS",
+   "q": "Cas pratique — L'école accueille des élèves en situation de handicap sans aucun dispositif adapté. La priorité du DEP (C3/C5) est de :",
+   "opts": [
+    "Concevoir avec l'équipe pédagogique des dispositifs de différenciation et d'intégration",
+    "Refuser ces élèves",
+    "Les regrouper sans encadrement",
+    "Attendre une dotation ministérielle"
+   ],
+   "a": 0,
+   "exp": "C5, composante 5 : faire évoluer les élèves à besoins spécifiques par la conception de dispositifs de différenciation et d'intégration."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "Le domaine « Gestion managériale de l'école » couvre les compétences :",
+   "opts": [
+    "C3 à C5",
+    "C6 à C10",
+    "C8 uniquement",
+    "C11 à C13"
+   ],
+   "a": 1,
+   "exp": "D3 = C6 (manager), C7 (projet d'école), C8 (organisation scolaire), C9 (ressources), C10 (climat de travail)."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "« Piloter la mise en œuvre du projet d'école articulé aux projets éducatif et pédagogique » correspond à la compétence :",
+   "opts": [
+    "C6",
+    "C7",
+    "C8",
+    "C9"
+   ],
+   "a": 1,
+   "exp": "C7 : le DEP a obligation de ramener le projet au niveau de son école (élaboration, mise en œuvre, suivi-évaluation)."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "Le suivi-évaluation du projet d'école est mené en lien avec les normes :",
+   "opts": [
+    "ISO 21001",
+    "De l'École Amie des Enfants (EAE)",
+    "Du PASEC",
+    "Du C2D"
+   ],
+   "a": 1,
+   "exp": "C7, composante 4 : suivi-évaluation du projet d'école en lien avec les normes EAE."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "Au sein de l'équipe éducative, les parents sont :",
+   "opts": [
+    "Membres de droit",
+    "Exclus des réunions",
+    "De simples observateurs",
+    "Convoqués uniquement en cas de sanction"
+   ],
+   "a": 0,
+   "exp": "Sens de C8 : les parents sont membres de droit de l'équipe éducative."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "Quel indicateur atteste de la gestion du recrutement des contractuels (C9) ?",
+   "opts": [
+    "Le PV de l'entretien de recrutement",
+    "Le cahier-journal",
+    "Le plan EAE",
+    "Le blog des directeurs"
+   ],
+   "a": 0,
+   "exp": "C9, composante 2 : PV d'identification des besoins, définition du profil, PV d'entretien, avis de recrutement."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "Le suivi de la gestion des ressources financières s'appuie notamment sur :",
+   "opts": [
+    "Le registre d'inventaire du matériel et le cahier de suivi du COGES",
+    "Le cahier de textes des élèves",
+    "Les fiches de préparation",
+    "Le plan de communication du projet d'école"
+   ],
+   "a": 0,
+   "exp": "C9, composante 4 : registre d'inventaire, cahier de suivi du COGES, rapports de collaboration COGES/CMEF."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "« Assumer la responsabilité de toute décision prise » (C10) a pour indicateur :",
+   "opts": [
+    "L'existence de PV « signés » et de documents visés",
+    "L'initiation de prix d'excellence",
+    "La correspondance électronique entre élèves",
+    "Le répertoire de partenaires"
+   ],
+   "a": 0,
+   "exp": "C10, composante 6 : PV « signés », cahiers et documents visés, rapports de réunions."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "Dans la conception managériale du référentiel, l'école est :",
+   "opts": [
+    "Une entreprise qui fait l'objet d'une gestion, avec des méthodes éprouvées",
+    "Une structure informelle",
+    "Une entité indépendante du ministère",
+    "Un simple lieu d'enseignement sans gestion"
+   ],
+   "a": 0,
+   "exp": "Sens de C9 : l'école est une entreprise qui fait l'objet d'une « gestion » (priorités, analyse, délégation, coordination, contrôle)."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "Quel principe général de gestion est explicitement cité dans le sens de la compétence C9 ?",
+   "opts": [
+    "La délégation de pouvoirs et la coordination",
+    "La gestion secrète des ressources",
+    "La centralisation absolue",
+    "L'absence de contrôle"
+   ],
+   "a": 0,
+   "exp": "Sens de C9 : ordre de priorité, analyse, recherche de solutions, choix, directives, délégation de pouvoirs, coordination, contrôle."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "La composante « Participer avec le concours de la hiérarchie à un processus d'évaluation de la lettre de mission » relève de :",
+   "opts": [
+    "C6",
+    "C8",
+    "C10",
+    "C12"
+   ],
+   "a": 0,
+   "exp": "C6 (compétences de manager), composante 5 ; indicateurs : cahier des charges, rapports des activités du DEP et de l'école."
+  },
+  {
+   "d": 2,
+   "type": "QCM",
+   "q": "L'indicateur « Accusés de réception et décharge dans le cahier d'information et distribution des notes de service » se rattache à :",
+   "opts": [
+    "La diffusion du règlement intérieur (C8)",
+    "Le recrutement des contractuels (C9)",
+    "L'usage des TIC (C9)",
+    "Les clubs scolaires (C11)"
+   ],
+   "a": 0,
+   "exp": "C8, composante 4 : diffusion du règlement intérieur — affichages à jour, registre des circulaires, accusés de réception et décharge."
+  },
+  {
+   "d": 2,
+   "type": "VF",
+   "q": "Le règlement intérieur fait l'objet d'un vote dont l'ordre du jour et le rapport sont consignés.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : C8 — vote du règlement intérieur par le conseil, consigné dans le registre des PV et rapports."
+  },
+  {
+   "d": 2,
+   "type": "VF",
+   "q": "Déléguer des responsabilités aux membres de l'équipe est contraire au rôle du DEP.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : c'est une composante de C10 (PV de répartition des tâches, organigramme de l'école, maître de semaine)."
+  },
+  {
+   "d": 2,
+   "type": "VF",
+   "q": "La désignation d'un maître de semaine doit être régulière.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : indicateur récurrent (C2, C9, C10) : désignation régulière d'un maître de semaine et tenue du cahier de semaine."
+  },
+  {
+   "d": 2,
+   "type": "VF",
+   "q": "La gestion des conflits prévue par C10 exclut la prise en compte des émotions.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : C10, composante 5 — gérer les conflits, les pressions, les tensions, les émotions."
+  },
+  {
+   "d": 2,
+   "type": "VF",
+   "q": "La mise en place d'un café pédagogique ou d'un blog par l'équipe est un indicateur de la formation par les pairs.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : C6, composante 4 — faciliter la formation par les pairs (café pédagogique, rapports de formations avec les pairs, répertoire de compétences)."
+  },
+  {
+   "d": 2,
+   "type": "CAS",
+   "q": "Cas pratique — Deux enseignants s'opposent vivement en conseil de maîtres. Conformément à C10, le DEP doit :",
+   "opts": [
+    "Exclure les deux enseignants du conseil",
+    "Permettre l'expression d'avis divergents et construire un compromis, avec un langage apaisant",
+    "Suspendre définitivement les conseils",
+    "Saisir la gendarmerie"
+   ],
+   "a": 1,
+   "exp": "C10, composante 4 : expression d'avis divergents et construction de compromis ; langage apaisant et respectueux."
+  },
+  {
+   "d": 2,
+   "type": "CAS",
+   "q": "Cas pratique — L'école doit recruter un enseignant contractuel. La première étape conforme à C9 est :",
+   "opts": [
+    "Tenir la réunion d'identification des besoins en personnels, avec PV",
+    "Signer immédiatement le contrat",
+    "Publier les résultats du recrutement",
+    "Laisser le COGES choisir seul"
+   ],
+   "a": 0,
+   "exp": "C9, composante 2 : la chaîne débute par le PV de la réunion d'identification des besoins, puis profil, avis, entretien."
+  },
+  {
+   "d": 2,
+   "type": "CAS",
+   "q": "Cas pratique — La mise en œuvre du projet d'école stagne. La réponse managériale attendue (C7) est :",
+   "opts": [
+    "Abandonner le projet",
+    "Élaborer une matrice d'actions avec un réajustement régulier",
+    "Transférer le pilotage au COGES",
+    "Attendre les instructions de la DRENA"
+   ],
+   "a": 1,
+   "exp": "C7, composante 3 : matrice d'actions avec réajustement régulier ; rapports d'exécution et plan de communication."
+  },
+  {
+   "d": 2,
+   "type": "CAS",
+   "q": "Cas pratique — Le matériel de l'école disparaît régulièrement. Conformément à C9, le DEP met en place :",
+   "opts": [
+    "Le registre d'inventaire du matériel et son suivi régulier",
+    "Une interdiction totale d'utiliser le matériel",
+    "Des achats sur fonds personnels",
+    "Un gardiennage assuré par les élèves"
+   ],
+   "a": 0,
+   "exp": "C9, composantes 3 et 4 : registre d'inventaire du matériel, cahier de suivi du COGES, rapports de collaboration COGES/CMEF."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Le domaine « Animation de la vie scolaire et développement de partenariats » regroupe :",
+   "opts": [
+    "C1 et C2",
+    "C3 à C5",
+    "C6 à C10",
+    "C11 à C13"
+   ],
+   "a": 3,
+   "exp": "D4 = C11 (participation des élèves), C12 (partenariats), C13 (communauté éducative)."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "« Favoriser la participation des élèves à la vie de l'école » correspond à la compétence :",
+   "opts": [
+    "C10",
+    "C11",
+    "C12",
+    "C13"
+   ],
+   "a": 1,
+   "exp": "C11 : les élèves sont des acteurs engagés dans la vie de leur établissement."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Selon le sens de C11, les élèves sont des acteurs engagés notamment dans le développement :",
+   "opts": [
+    "D'une démocratie scolaire",
+    "Du budget de l'école",
+    "Du recrutement des maîtres",
+    "De l'inspection administrative"
+   ],
+   "a": 0,
+   "exp": "Sens de C11 : engagés dans leurs apprentissages et dans le développement d'une démocratie scolaire."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Quel indicateur atteste de la promotion des activités de vie scolaire ?",
+   "opts": [
+    "Les rapports d'activités de la coopérative scolaire",
+    "Le PV de recrutement",
+    "Le registre d'inventaire",
+    "Le décret d'organigramme"
+   ],
+   "a": 0,
+   "exp": "C11, composante 1 : rapports de la coopérative scolaire, rapports des clubs, embellissement de la cour."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Selon le référentiel, un partenariat se caractérise par :",
+   "opts": [
+    "L'apport particulier de chacun et un partage des risques et des bénéfices",
+    "Un financement unilatéral sans contrepartie",
+    "Une tutelle administrative",
+    "Une sous-traitance commerciale"
+   ],
+   "a": 0,
+   "exp": "Sens de C12 : apport particulier de chacun et partage des risques et des bénéfices, constitutifs d'un partenariat."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Les plaidoyers élaborés par le DEP (C12) visent des partenaires :",
+   "opts": [
+    "Sociaux, techniques et financiers",
+    "Exclusivement politiques",
+    "Uniquement religieux",
+    "Sportifs uniquement"
+   ],
+   "a": 0,
+   "exp": "C12, composante 5 : plaidoyers auprès de partenaires sociaux, techniques et financiers ; copies de requêtes transmises."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "La protection des enfants est assurée en liaison avec :",
+   "opts": [
+    "Les services compétents et les services sociaux",
+    "Le seul COGES",
+    "Les fournisseurs de l'école",
+    "La presse locale"
+   ],
+   "a": 0,
+   "exp": "C13, composante 5 : protection des enfants en liaison avec les services compétents (services sociaux, services de protection)."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Les activités de coéducation (C13) sont développées avec :",
+   "opts": [
+    "Les familles",
+    "Les banques",
+    "Les syndicats",
+    "Les éditeurs scolaires"
+   ],
+   "a": 0,
+   "exp": "C13, composante 1 : développer des activités de coéducation avec les familles."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "L'« État d'embellissement de la cour de l'école » est un indicateur de :",
+   "opts": [
+    "La promotion des activités de vie scolaire (C11)",
+    "La gestion financière (C9)",
+    "Le sens de la hiérarchie (C2)",
+    "Le pilotage du projet d'école (C7)"
+   ],
+   "a": 0,
+   "exp": "C11, composante 1 : promouvoir les activités de vie scolaire — coopérative, clubs, embellissement de la cour."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Quel document encadre les engagements avec les partenaires de l'école ?",
+   "opts": [
+    "Le cahier des charges des partenaires de l'école",
+    "Le cahier-journal",
+    "Le cahier de semaine",
+    "Le bulletin de visite de classe"
+   ],
+   "a": 0,
+   "exp": "C12/C13 : existence d'un cahier des charges des partenaires de l'école, rapports d'activités et document d'évaluation des actions de partenariat."
+  },
+  {
+   "d": 3,
+   "type": "QCM",
+   "q": "Le sens de la compétence C13 rattache la collaboration au sein de la communauté éducative au :",
+   "opts": [
+    "Contrat d'objectif et de performance",
+    "Budget de l'État",
+    "Calendrier des concours",
+    "Décret d'organigramme"
+   ],
+   "a": 0,
+   "exp": "Sens de C13 : un partenariat indispensable pour un encadrement efficient de l'enfant dans le cadre du contrat d'objectif et de performance."
+  },
+  {
+   "d": 3,
+   "type": "VF",
+   "q": "Le comité de veille a pour objet la sauvegarde de l'environnement scolaire.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : comité de veille pour la sauvegarde de l'environnement scolaire (C11/C12)."
+  },
+  {
+   "d": 3,
+   "type": "VF",
+   "q": "Une fois la convention signée, le suivi-évaluation des partenariats devient inutile.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : C12, composante 6 — faire le suivi-évaluation des partenariats mis en œuvre (document d'évaluation des actions)."
+  },
+  {
+   "d": 3,
+   "type": "VF",
+   "q": "L'écocitoyenneté et l'entrepreneuriat font partie des activités à promouvoir auprès des élèves.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : C11, composante 3 — promouvoir les activités d'écocitoyenneté et d'entrepreneuriat."
+  },
+  {
+   "d": 3,
+   "type": "VF",
+   "q": "Le bien-être à l'école relève exclusivement des services sociaux, sans mobilisation de la communauté éducative.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 1,
+   "exp": "Faux : C13, composante 6 — mobiliser la communauté éducative autour d'initiatives améliorant le bien-être à l'école."
+  },
+  {
+   "d": 3,
+   "type": "VF",
+   "q": "Les clubs scolaires contribuent à la cohésion sociale et à l'amélioration des relations humaines entre élèves.",
+   "opts": [
+    "Vrai",
+    "Faux"
+   ],
+   "a": 0,
+   "exp": "Vrai : C11, composante 2 — améliorer les relations humaines et la cohésion sociale par la participation aux clubs scolaires."
+  },
+  {
+   "d": 3,
+   "type": "CAS",
+   "q": "Cas pratique — Une ONG propose un appui financier, mais ses pratiques contredisent les valeurs de l'école. Le DEP doit :",
+   "opts": [
+    "Accepter sans condition",
+    "Se référer au répertoire de partenaires respectueux des valeurs de l'école et à la charte de l'école",
+    "Dissimuler le partenariat à la hiérarchie",
+    "Négocier une commission personnelle"
+   ],
+   "a": 1,
+   "exp": "C12, composante 4 : répertoire de partenaires respectueux des valeurs de l'école ; charte de l'école."
+  },
+  {
+   "d": 3,
+   "type": "CAS",
+   "q": "Cas pratique — Un cas de maltraitance d'un élève est porté à la connaissance du DEP. Il doit :",
+   "opts": [
+    "Régler l'affaire en interne sans trace écrite",
+    "Saisir les services sociaux et les services visant à la protection des enfants",
+    "Ignorer le signalement",
+    "Sanctionner l'élève concerné"
+   ],
+   "a": 1,
+   "exp": "C13, composante 5 : protection des enfants en liaison avec les services compétents ; courriers et rapports d'activités avec les services sociaux."
+  },
+  {
+   "d": 3,
+   "type": "CAS",
+   "q": "Cas pratique — La cour de l'école est dégradée et la communauté est démobilisée. Conformément à C13, le DEP :",
+   "opts": [
+    "Mobilise la communauté éducative autour d'initiatives améliorant le bien-être à l'école",
+    "Interdit l'accès à la cour",
+    "Attend un financement extérieur",
+    "Transfère la question au ministère"
+   ],
+   "a": 0,
+   "exp": "C13, composante 6 : mobilisation de la communauté éducative ; plan de communication en direction de la communauté (cf. aussi C11 : embellissement de la cour)."
+  },
+  {
+   "d": 3,
+   "type": "CAS",
+   "q": "Cas pratique — Le DEP souhaite formaliser un partenariat avec une entreprise locale. La démarche conforme à C12 comprend :",
+   "opts": [
+    "Une correspondance en direction du nouveau partenaire, puis un document d'évaluation des actions de partenariat",
+    "Un accord verbal sans trace écrite",
+    "Un contrat signé par les élèves",
+    "Une clause d'exclusivité tenue secrète"
+   ],
+   "a": 0,
+   "exp": "C12 : correspondances vers les nouveaux partenaires, copies de requêtes, puis suivi-évaluation des partenariats (document d'évaluation)."
+  }
+ ]
+};
+const DOMAINES = BANK.domaines;
+const Q = BANK.questions.map((q,i)=>({ ...q, id:i }));
+const TOTAL = Q.length, PER = TOTAL / DOMAINES.length;
+const LET = ["A","B","C","D"];
+const TLAB = { QCM:"QCM", VF:"Vrai / Faux", CAS:"Cas pratique" };
+const TCOL = { QCM:"#1E3A5F", VF:"#6B4E9B", CAS:"#9A5B13" };
+const HAS_ENDPOINT = ENDPOINT.startsWith("http");
+
+let phase="setup", idx=0, meta={nom:"",ecole:"",iepp:"IEPP Cocody II Plateaux",drena:""};
+let answers={}, times={}, startT=null, lastT=null, timerInt=null, finishing=false;
+
+const $ = (s)=>document.querySelector(s);
+const esc = (s)=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const fmt = (s)=>{ s=Math.max(0,Math.round(s)); const m=Math.floor(s/60), x=s%60;
+  return String(m).padStart(2,"0")+":"+String(x).padStart(2,"0"); };
+const band = (p)=> p>=85?{t:"Maîtrise experte",hex:"#1B7A43"} : p>=70?{t:"Bonne maîtrise",hex:"#3E7C2E"}
+  : p>=50?{t:"Maîtrise partielle",hex:"#C97D10"} : {t:"Maîtrise insuffisante",hex:"#B3372B"};
+const tri = '<div class="tri"><div class="t1"></div><div class="t2"></div><div class="t3"></div></div>';
+
+const loadLS = ()=>{ try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch(e){ return null; } };
+const saveLS = (o)=>{ try { localStorage.setItem(LS_KEY, JSON.stringify(o)); } catch(e){} };
+
+function snapshot(status){
+  return { status, meta, answers, times, startT, savedAt: Date.now() };
+}
+
+function buildPayload(complet, motif){
+  const mk=()=>({ok:0,n:0});
+  const g=mk(), byD=DOMAINES.map(()=>mk());
+  const detail = Q.map(q=>{
+    const v=answers[q.id], ok=v===q.a;
+    g.n++; byD[q.d].n++;
+    if(ok){ g.ok++; byD[q.d].ok++; }
+    return { n:q.id+1, d:q.d+1, type:q.type, rep:v===undefined?"":(q.type==="VF"?q.opts[v]:LET[v]), ok:ok?1:0, t:+((times[q.id]||0).toFixed(1)) };
+  });
+  return {
+    horodatage: new Date().toISOString(),
+    nom: meta.nom, ecole: meta.ecole, iepp: meta.iepp, drena: meta.drena,
+    score_global: g.ok, total: g.n,
+    d1: byD[0].ok, d2: byD[1].ok, d3: byD[2].ok, d4: byD[3].ok,
+    repondues: Object.keys(answers).length,
+    duree_s: startT ? Math.min(LIMIT_S, Math.round((Date.now()-startT)/1000)) : 0,
+    complet: complet ? "OUI" : "NON",
+    motif: motif,
+    detail: detail
+  };
+}
+
+function sendPayload(payload, useBeacon){
+  if(!HAS_ENDPOINT){ const st=loadLS()||{}; st.pending=payload; saveLS(st); return Promise.resolve(false); }
+  const body = JSON.stringify(payload);
+  if(useBeacon && navigator.sendBeacon){
+    const sent = navigator.sendBeacon(ENDPOINT, new Blob([body], {type:"text/plain"}));
+    if(!sent){ const st=loadLS()||{}; st.pending=payload; saveLS(st); }
+    return Promise.resolve(sent);
+  }
+  return fetch(ENDPOINT, { method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain"}, body })
+    .then(()=>{ const st=loadLS()||{}; delete st.pending; saveLS(st); return true; })
+    .catch(()=>{ const st=loadLS()||{}; st.pending=payload; saveLS(st); return false; });
+}
+
+function flushPending(){
+  const st=loadLS();
+  if(st && st.pending && HAS_ENDPOINT && navigator.onLine){
+    const p=st.pending;
+    fetch(ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(p)})
+      .then(()=>{ const s=loadLS()||{}; delete s.pending; saveLS(s); const n=$("#pendingNote"); if(n) n.textContent="✓ Données transmises."; })
+      .catch(()=>{});
+  }
+}
+
+/* ---------- Sortie en cours de test = test clôturé ---------- */
+function onLeave(){
+  if(phase!=="quiz" || finishing) return;
+  finishing = true;
+  const payload = buildPayload(false, "sortie_avant_fin");
+  saveLS({ status:"done", result:{ ok:payload.score_global, n:payload.total, byD:[payload.d1,payload.d2,payload.d3,payload.d4], complet:false } });
+  sendPayload(payload, true);
+}
+window.addEventListener("pagehide", onLeave);
+window.addEventListener("beforeunload", onLeave);
+
+/* ---------- Écrans ---------- */
+function render(){ 
+  if(phase==="setup") renderSetup();
+  else if(phase==="quiz") renderQuiz();
+  else if(phase==="results") renderResults();
+  window.scrollTo(0,0);
+}
+
+function header(sub){
+  return `<header style="padding:32px 0 22px;text-align:center">
+    <div class="mono" style="font-size:11px;letter-spacing:2px;color:var(--grey);text-transform:uppercase">
+      République de Côte d'Ivoire — MENA-ET</div>
+    <h1 class="display" style="font-size:25px;margin-top:10px;line-height:1.2">RÉFÉRENTIEL DES COMPÉTENCES<br>DE L'IEPP COCODY II PLATEAUX</h1>
+    <p style="margin-top:10px;color:#4B5563;font-size:14.5px">${sub}</p>
+  </header>`;
+}
+
+function renderSetup(){
+  $("#app").innerHTML = tri + `<div class="wrap">
+    ${header(`Test de maîtrise du référentiel des compétences du Directeur d'école primaire<br>${TOTAL} questions · ${PER} par domaine · <b>durée limitée : 15 minutes</b>`)}
+    ${HAS_ENDPOINT?"":'<div class="card" style="border-left:4px solid var(--bad);margin-bottom:14px;font-size:13px;color:var(--bad)"><b>⚠ Note administrateur :</b> l\'URL de collecte Google Apps Script n\'est pas encore configurée (ligne ENDPOINT du fichier). Les réponses ne seront pas transmises.</div>'}
+    <div class="card" style="margin-bottom:16px">
+      <h2 style="font-size:16px;color:var(--navy);margin-bottom:14px">Identification du directeur</h2>
+      <div style="display:grid;gap:12px">
+        ${[["nom","Nom et prénoms *"],["ecole","École *"]].map(([k,l])=>`
+        <label style="font-size:13px;font-weight:700;color:#374151">${l}
+          <input class="field" style="margin-top:5px" id="f_${k}" value="${esc(meta[k])}"></label>`).join("")}
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <h2 style="font-size:16px;color:var(--navy);margin-bottom:10px">Consignes — à lire avant de démarrer</h2>
+      <p style="font-size:14px;color:#374151;line-height:1.7">
+      1. Une seule réponse par question (1 point). Le chronomètre décompte <b>15 minutes</b> : à zéro, le test se termine et s'envoie automatiquement.<br>
+      2. <b>Une seule participation est autorisée.</b> Si vous quittez ou fermez la page en cours de test, celui-ci est définitivement clôturé et les réponses déjà saisies sont transmises.<br>
+      3. À la fin, vos résultats sont transmis automatiquement à l'administration. Assurez-vous d'être connecté à internet.</p>
+    </div>
+    <button class="btn btn-p" style="width:100%;font-size:16px" id="startBtn" disabled>Renseignez les champs obligatoires (*)</button>
+  </div>`;
+  const check=()=>{ ["nom","ecole"].forEach(k=>meta[k]=$("#f_"+k).value);
+    const ok=meta.nom.trim()&&meta.ecole.trim();
+    $("#startBtn").disabled=!ok; $("#startBtn").textContent = ok?"Démarrer le test (15:00) ▸":"Renseignez les champs obligatoires (*)"; };
+  ["nom","ecole"].forEach(k=>$("#f_"+k).addEventListener("input",check)); check();
+  $("#startBtn").addEventListener("click",()=>{
+    startT=Date.now(); lastT=Date.now(); phase="quiz";
+    saveLS(snapshot("in_progress"));
+    timerInt=setInterval(tick, 500);
+    render();
+  });
+}
+
+function tick(){
+  const rem = LIMIT_S - (Date.now()-startT)/1000;
+  const el=$("#chrono");
+  if(el){ el.textContent="⏳ "+fmt(rem); el.style.background = rem<=120 ? "var(--bad)" : "rgba(255,255,255,.14)"; }
+  if(rem<=0) finish(true);
+}
+
+function renderQuiz(){
+  const q=Q[idx], sel=answers[q.id], answered=Object.keys(answers).length, isLast=idx===TOTAL-1;
+  $("#app").innerHTML = `<div class="sticky">${tri}
+    <div style="max-width:760px;margin:0 auto;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;color:#fff">
+      <div style="font-size:12.5px;font-weight:700;opacity:.92">Question ${idx+1}/${TOTAL} · D${q.d+1}</div>
+      <div class="mono" id="chrono" style="background:rgba(255,255,255,.14);border-radius:6px;padding:4px 12px;font-size:15px;font-weight:700">⏳ ${fmt(LIMIT_S-(Date.now()-startT)/1000)}</div>
+    </div>
+    <div class="bar"><div style="width:${100*answered/TOTAL}%"></div></div>
+  </div>
+  <div class="wrap" style="padding-top:22px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <span class="badge" style="background:${TCOL[q.type]}">${TLAB[q.type]}</span>
+      <span class="mono" style="font-size:11px;letter-spacing:1px;color:#8A8474;text-transform:uppercase">${esc(DOMAINES[q.d])}</span>
+    </div>
+    <h2 style="font-size:17.5px;font-weight:800;line-height:1.45;margin-bottom:18px">
+      <span class="mono" style="color:#8A8474;font-size:14px;margin-right:8px">${String(idx+1).padStart(2,"0")}.</span>${esc(q.q)}</h2>
+    <div style="display:grid;gap:10px">
+      ${q.opts.map((o,i)=>`<button class="opt${sel===i?" sel":""}" data-i="${i}">
+        <span class="optL">${q.type==="VF"?(i===0?"V":"F"):LET[i]}.</span><span>${esc(o)}</span></button>`).join("")}
+    </div>
+    <div style="display:flex;gap:10px;margin-top:24px">
+      <button class="btn btn-p" style="flex:1" id="next" ${sel===undefined?"disabled":""}>
+        ${sel===undefined?"Sélectionnez une réponse":isLast?`Terminer et transmettre (${answered}/${TOTAL}) ✓`:"Question suivante ▸"}</button>
+    </div>
+    <p style="font-size:12px;color:var(--grey);margin-top:12px;text-align:center">Participation unique — ne fermez pas cette page avant la fin.</p>
+  </div>`;
+  document.querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>{
+    const i=+b.dataset.i;
+    if(!(q.id in times)) times[q.id]=(Date.now()-lastT)/1000;
+    lastT=Date.now(); answers[q.id]=i;
+    saveLS(snapshot("in_progress"));
+    render();
+  }));
+  $("#next").addEventListener("click",()=>{
+    if(answers[q.id]===undefined) return;
+    if(isLast) finish(false);
+    else { idx++; lastT=Date.now(); render(); }
+  });
+}
+
+function finish(auto){
+  if(finishing) return;
+  finishing = true;
+  clearInterval(timerInt);
+  const payload = buildPayload(Object.keys(answers).length===TOTAL, auto?"temps_ecoule":"termine");
+  saveLS({ status:"done", result:{ ok:payload.score_global, n:payload.total, byD:[payload.d1,payload.d2,payload.d3,payload.d4], complet:payload.complet==="OUI" } });
+  sendPayload(payload, false).then((sent)=>{ phase="results"; window.__sent=sent; render(); });
+  phase="results"; render();
+}
+
+function renderResults(){
+  const st=loadLS(), r=st&&st.result?st.result:null;
+  const pending = st && st.pending;
+  const gP = r ? 100*r.ok/r.n : 0, gB = band(gP);
+  $("#app").innerHTML = tri + `<div class="wrap" style="padding-top:30px">
+    ${header("Test terminé — merci de votre participation")}
+    <div class="card" style="text-align:center;margin-bottom:16px;border-top:5px solid ${gB.hex}">
+      <div class="display" style="font-size:48px;font-weight:900;color:${gB.hex};line-height:1">${r?r.ok:"—"}/${r?r.n:TOTAL}</div>
+      <div style="font-weight:800;font-size:16px;color:${gB.hex};margin-top:4px">${r?gP.toFixed(1)+" % — "+gB.t:""}</div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <h2 style="font-size:15px;color:var(--navy);margin-bottom:12px">Scores par domaine</h2>
+      <div style="display:grid;gap:10px">
+      ${r?r.byD.map((ok,i)=>{ const p=100*ok/PER, b=band(p); return `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+            <span>D${i+1} — ${esc(DOMAINES[i])}</span><span class="mono" style="color:${b.hex}">${ok}/${PER}</span></div>
+          <div class="pbar" style="margin-top:5px"><div style="width:${p}%;background:${b.hex}"></div></div>
+        </div>`;}).join(""):""}
+      </div>
+    </div>
+    <div class="card" style="border-left:4px solid ${pending?"var(--warn)":"var(--ok)"};font-size:13.5px;line-height:1.6">
+      <b id="pendingNote">${pending
+        ? "⏳ Transmission en attente : connectez cet appareil à internet puis rouvrez cette page pour finaliser l'envoi."
+        : "✓ Vos résultats ont été transmis automatiquement à l'administration de l'IEPP."}</b>
+      <div style="color:var(--grey);margin-top:6px">Ce test ne peut être passé qu'une seule fois sur cet appareil.</div>
+    </div>
+  </div>`;
+  flushPending();
+}
+
+function renderDone(){
+  phase="results";
+  renderResults();
+}
+
+/* ---------- Démarrage : application du verrou ---------- */
+(function init(){
+  const st = loadLS();
+  if(st && st.status === "done"){ renderDone(); return; }
+  if(st && st.status === "in_progress"){
+    /* Test commencé puis page fermée : clôture définitive avec les réponses sauvegardées */
+    meta = st.meta || meta; answers = st.answers || {}; times = st.times || {}; startT = st.startT || Date.now();
+    const payload = buildPayload(false, "sortie_avant_fin");
+    saveLS({ status:"done", result:{ ok:payload.score_global, n:payload.total, byD:[payload.d1,payload.d2,payload.d3,payload.d4], complet:false } });
+    sendPayload(payload, false).then(()=>renderDone());
+    renderDone(); return;
+  }
+  render();
+})();
+</script>
+</body>
+</html>
